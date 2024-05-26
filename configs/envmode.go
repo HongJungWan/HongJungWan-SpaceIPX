@@ -1,0 +1,5 @@
+package configs
+
+const ENV_MODE = "ENV_MODE"
+const CONFIG_FILE = "CONFIG_FILE"
+const CONFIG_DIRECTORY = "CONFIG_DIRECTORY"
