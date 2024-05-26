@@ -1,1 +1,4 @@
 .idea
+configs/certs
+configs/.space-ipx.local.yaml
+Dockerfile
