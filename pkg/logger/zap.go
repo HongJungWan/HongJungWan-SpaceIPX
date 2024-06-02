@@ -5,7 +5,6 @@ import (
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
 	"os"
-	"path/filepath"
 )
 
 type zapLogger struct {
@@ -13,7 +12,7 @@ type zapLogger struct {
 }
 
 func newZapLogger(config Config) (Logger, error) {
-	cores := []zapcore.Core{}
+	var cores []zapcore.Core
 
 	if config.Console.Enable {
 		cores = append(cores, getConsoleCore(config.Console))
@@ -23,18 +22,11 @@ func newZapLogger(config Config) (Logger, error) {
 		cores = append(cores, getFileCore(config.File))
 	}
 
-	if config.ServiceName == "" {
-		config.ServiceName = filepath.Base(os.Args[0])
-	}
-
 	combinedCore := zapcore.NewTee(cores...)
-
-	logger := addPid(addService(addHostname(
-		zap.New(
-			combinedCore,
-			zap.AddCallerSkip(2),
-			zap.AddCaller()).Sugar(),
-	), config.ServiceName))
+	logger := zap.New(
+		combinedCore,
+		zap.AddCallerSkip(2),
+		zap.AddCaller()).Sugar()
 
 	return &zapLogger{sugar: logger}, nil
 }
@@ -58,22 +50,6 @@ func getFileCore(fileCfg File) zapcore.Core {
 		getZapLevel(fileCfg.Level))
 }
 
-func addPid(logger *zap.SugaredLogger) *zap.SugaredLogger {
-	return logger.With(zap.Int("pid", os.Getpid()))
-}
-
-func addService(logger *zap.SugaredLogger, name string) *zap.SugaredLogger {
-	return logger.With(zap.String("service", name))
-}
-
-func addHostname(logger *zap.SugaredLogger) *zap.SugaredLogger {
-	hostname, err := os.Hostname()
-	if err != nil {
-		hostname = "unknown"
-	}
-	return logger.With(zap.String("hostname", hostname))
-}
-
 func getEncoder(isJSON bool, encoderConfig *zapcore.EncoderConfig) zapcore.Encoder {
 	var newEncoderConfig zapcore.EncoderConfig
 	if encoderConfig == nil {
@@ -83,7 +59,7 @@ func getEncoder(isJSON bool, encoderConfig *zapcore.EncoderConfig) zapcore.Encod
 	}
 
 	if encoderConfig == nil || encoderConfig.EncodeTime == nil {
-		newEncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+		newEncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder //ISO8601TimeEncoder  //RFC3339NanoTimeEncoder
 	}
 
 	if encoderConfig == nil || encoderConfig.EncodeLevel == nil {
